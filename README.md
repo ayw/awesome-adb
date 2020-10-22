@@ -4,13 +4,18 @@ ADB，即 [Android Debug Bridge](https://developer.android.com/studio/command-li
 
 持续更新中，欢迎提 PR 和 Issue 补充指正，觉得有用的可以将 [此 GitHub 仓库](https://github.com/mzlogin/awesome-adb) Star 收藏备用。
 
-**注：** 有部分命令的支持情况可能与 Android 系统版本及定制 ROM 的实现有关。
+给本项目提建议和意见，或想与我交流，可关注微信公众号「闷骚的程序员」：
+
+<img src="https://cdn.jsdelivr.net/gh/mzlogin/mzlogin.github.io/assets/images/qrcode.jpg" style="width:120px;height:120px;" >
+
+**注：** 文中有部分命令的支持情况可能与 Android 系统版本及定制 ROM 的实现有关。
 
 Other languages: [:gb: English](./README.en.md)
 
 # ![Table of Contents](./assets/toc.png)
 
 <!-- vim-markdown-toc GFM -->
+
 * [基本用法](#基本用法)
     * [命令语法](#命令语法)
     * [为命令指定目标设备](#为命令指定目标设备)
@@ -34,11 +39,15 @@ Other languages: [:gb: English](./README.en.md)
     * [清除应用数据与缓存](#清除应用数据与缓存)
     * [查看前台 Activity](#查看前台-activity)
     * [查看正在运行的 Services](#查看正在运行的-services)
+    * [查看应用详细信息](#查看应用详细信息)
+    * [查看应用安装路径](#查看应用安装路径)
 * [与应用交互](#与应用交互)
-    * [调起 Activity](#调起-activity)
+    * [启动应用/ 调起 Activity](#启动应用-调起-activity)
     * [调起 Service](#调起-service)
+    * [停止 Service](#停止-service)
     * [发送广播](#发送广播)
     * [强制停止应用](#强制停止应用)
+    * [收紧内存](#收紧内存)
 * [文件管理](#文件管理)
     * [复制设备里的文件到电脑](#复制设备里的文件到电脑)
     * [复制电脑里的文件到设备](#复制电脑里的文件到设备)
@@ -78,6 +87,7 @@ Other languages: [:gb: English](./README.en.md)
     * [屏幕密度](#屏幕密度-1)
     * [显示区域](#显示区域)
     * [关闭 USB 调试模式](#关闭-usb-调试模式)
+    * [允许/禁止访问非 SDK API](#允许禁止访问非-sdk-api)
     * [状态栏和导航栏的显示隐藏](#状态栏和导航栏的显示隐藏)
 * [实用功能](#实用功能)
     * [屏幕截图](#屏幕截图)
@@ -94,13 +104,19 @@ Other languages: [:gb: English](./README.en.md)
     * [从 Recovery 重启到 Android](#从-recovery-重启到-android)
     * [重启到 Fastboot 模式](#重启到-fastboot-模式)
     * [通过 sideload 更新系统](#通过-sideload-更新系统)
+* [安全相关命令](#安全相关命令)
+    * [启用/禁用 SELinux](#启用禁用-selinux)
+    * [启用/禁用 dm_verity](#启用禁用-dm_verity)
 * [更多 adb shell 命令](#更多-adb-shell-命令)
     * [查看进程](#查看进程)
     * [查看实时资源占用情况](#查看实时资源占用情况)
+    * [查看进程 UID](#查看进程-uid)
     * [其它](#其它)
 * [常见问题](#常见问题)
     * [启动 adb server 失败](#启动-adb-server-失败)
+    * [com.android.ddmlib.AdbCommandRejectedException](#comandroidddmlibadbcommandrejectedexception)
 * [adb 的非官方实现](#adb-的非官方实现)
+* [相关命令](#相关命令)
 * [致谢](#致谢)
 * [参考链接](#参考链接)
 
@@ -533,60 +549,61 @@ Failure [INSTALL_FAILED_ALREADY_EXISTS]
 
 常见安装失败输出代码、含义及可能的解决办法如下：
 
-| 输出                                                                | 含义                                                                     | 解决办法                                                                       |
-|---------------------------------------------------------------------|--------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| INSTALL\_FAILED\_ALREADY\_EXISTS                                    | 应用已经存在，或卸载了但没卸载干净                                       | `adb install` 时使用 `-r` 参数，或者先 `adb uninstall <packagename>` 再安装    |
-| INSTALL\_FAILED\_INVALID\_APK                                       | 无效的 APK 文件                                                          |                                                                                |
-| INSTALL\_FAILED\_INVALID\_URI                                       | 无效的 APK 文件名                                                        | 确保 APK 文件名里无中文                                                        |
-| INSTALL\_FAILED\_INSUFFICIENT\_STORAGE                              | 空间不足                                                                 | 清理空间                                                                       |
-| INSTALL\_FAILED\_DUPLICATE\_PACKAGE                                 | 已经存在同名程序                                                         |                                                                                |
-| INSTALL\_FAILED\_NO\_SHARED\_USER                                   | 请求的共享用户不存在                                                     |                                                                                |
-| INSTALL\_FAILED\_UPDATE\_INCOMPATIBLE                               | 以前安装过同名应用，但卸载时数据没有移除；或者已安装该应用，但签名不一致 | 先 `adb uninstall <packagename>` 再安装                                        |
-| INSTALL\_FAILED\_SHARED\_USER\_INCOMPATIBLE                         | 请求的共享用户存在但签名不一致                                           |                                                                                |
-| INSTALL\_FAILED\_MISSING\_SHARED\_LIBRARY                           | 安装包使用了设备上不可用的共享库                                         |                                                                                |
-| INSTALL\_FAILED\_REPLACE\_COULDNT\_DELETE                           | 替换时无法删除                                                           |                                                                                |
-| INSTALL\_FAILED\_DEXOPT                                             | dex 优化验证失败或空间不足                                               |                                                                                |
-| INSTALL\_FAILED\_OLDER\_SDK                                         | 设备系统版本低于应用要求                                                 |                                                                                |
-| INSTALL\_FAILED\_CONFLICTING\_PROVIDER                              | 设备里已经存在与应用里同名的 content provider                            |                                                                                |
-| INSTALL\_FAILED\_NEWER\_SDK                                         | 设备系统版本高于应用要求                                                 |                                                                                |
-| INSTALL\_FAILED\_TEST\_ONLY                                         | 应用是 test-only 的，但安装时没有指定 `-t` 参数                          |                                                                                |
-| INSTALL\_FAILED\_CPU\_ABI\_INCOMPATIBLE                             | 包含不兼容设备 CPU 应用程序二进制接口的 native code                      |                                                                                |
-| INSTALL\_FAILED\_MISSING\_FEATURE                                   | 应用使用了设备不可用的功能                                               |                                                                                |
-| INSTALL\_FAILED\_CONTAINER\_ERROR                                   | 1. sdcard 访问失败;<br />2. 应用签名与 ROM 签名一致，被当作内置应用。    | 1. 确认 sdcard 可用，或者安装到内置存储;<br />2. 打包时不与 ROM 使用相同签名。 |
-| INSTALL\_FAILED\_INVALID\_INSTALL\_LOCATION                         | 1. 不能安装到指定位置;<br />2. 应用签名与 ROM 签名一致，被当作内置应用。 | 1. 切换安装位置，添加或删除 `-s` 参数;<br />2. 打包时不与 ROM 使用相同签名。   |
-| INSTALL\_FAILED\_MEDIA\_UNAVAILABLE                                 | 安装位置不可用                                                           | 一般为 sdcard，确认 sdcard 可用或安装到内置存储                                |
-| INSTALL\_FAILED\_VERIFICATION\_TIMEOUT                              | 验证安装包超时                                                           |                                                                                |
-| INSTALL\_FAILED\_VERIFICATION\_FAILURE                              | 验证安装包失败                                                           |                                                                                |
-| INSTALL\_FAILED\_PACKAGE\_CHANGED                                   | 应用与调用程序期望的不一致                                               |                                                                                |
-| INSTALL\_FAILED\_UID\_CHANGED                                       | 以前安装过该应用，与本次分配的 UID 不一致                                | 清除以前安装过的残留文件                                                       |
-| INSTALL\_FAILED\_VERSION\_DOWNGRADE                                 | 已经安装了该应用更高版本                                                 | 使用 `-d` 参数                                                                 |
-| INSTALL\_FAILED\_PERMISSION\_MODEL\_DOWNGRADE                       | 已安装 target SDK 支持运行时权限的同名应用，要安装的版本不支持运行时权限 |                                                                                |
-| INSTALL\_PARSE\_FAILED\_NOT\_APK                                    | 指定路径不是文件，或不是以 `.apk` 结尾                                   |                                                                                |
-| INSTALL\_PARSE\_FAILED\_BAD\_MANIFEST                               | 无法解析的 AndroidManifest.xml 文件                                      |                                                                                |
-| INSTALL\_PARSE\_FAILED\_UNEXPECTED\_EXCEPTION                       | 解析器遇到异常                                                           |                                                                                |
-| INSTALL\_PARSE\_FAILED\_NO\_CERTIFICATES                            | 安装包没有签名                                                           |                                                                                |
-| INSTALL\_PARSE\_FAILED\_INCONSISTENT\_CERTIFICATES                  | 已安装该应用，且签名与 APK 文件不一致                                    | 先卸载设备上的该应用，再安装                                                   |
-| INSTALL\_PARSE\_FAILED\_CERTIFICATE\_ENCODING                       | 解析 APK 文件时遇到 `CertificateEncodingException`                       |                                                                                |
-| INSTALL\_PARSE\_FAILED\_BAD\_PACKAGE\_NAME                          | manifest 文件里没有或者使用了无效的包名                                  |                                                                                |
-| INSTALL\_PARSE\_FAILED\_BAD\_SHARED\_USER\_ID                       | manifest 文件里指定了无效的共享用户 ID                                   |                                                                                |
-| INSTALL\_PARSE\_FAILED\_MANIFEST\_MALFORMED                         | 解析 manifest 文件时遇到结构性错误                                       |                                                                                |
-| INSTALL\_PARSE\_FAILED\_MANIFEST\_EMPTY                             | 在 manifest 文件里找不到找可操作标签（instrumentation 或 application）   |                                                                                |
-| INSTALL\_FAILED\_INTERNAL\_ERROR                                    | 因系统问题安装失败                                                       |                                                                                |
-| INSTALL\_FAILED\_USER\_RESTRICTED                                   | 用户被限制安装应用                                                       |                                                                                |
-| INSTALL\_FAILED\_DUPLICATE\_PERMISSION                              | 应用尝试定义一个已经存在的权限名称                                       |                                                                                |
-| INSTALL\_FAILED\_NO\_MATCHING\_ABIS                                 | 应用包含设备的应用程序二进制接口不支持的 native code                     |                                                                                |
-| INSTALL\_CANCELED\_BY\_USER                                         | 应用安装需要在设备上确认，但未操作设备或点了取消                         | 在设备上同意安装                                                               |
-| INSTALL\_FAILED\_ACWF\_INCOMPATIBLE                                 | 应用程序与设备不兼容                                                     |                                                                                |
-| does not contain AndroidManifest.xml                                | 无效的 APK 文件                                                          |                                                                                |
-| is not a valid zip file                                             | 无效的 APK 文件                                                          |                                                                                |
-| Offline                                                             | 设备未连接成功                                                           | 先将设备与 adb 连接成功                                                        |
-| unauthorized                                                        | 设备未授权允许调试                                                       |                                                                                |
-| error: device not found                                             | 没有连接成功的设备                                                       | 先将设备与 adb 连接成功                                                        |
-| protocol failure                                                    | 设备已断开连接                                                           | 先将设备与 adb 连接成功                                                        |
-| Unknown option: -s                                                  | Android 2.2 以下不支持安装到 sdcard                                      | 不使用 `-s` 参数                                                               |
-| No space left on device                                             | 空间不足                                                                 | 清理空间                                                                       |
-| Permission denied ... sdcard ...                                    | sdcard 不可用                                                            |                                                                                |
-| signatures do not match the previously installed version; ignoring! | 已安装该应用且签名不一致                                                 | 先卸载设备上的该应用，再安装                                                   |
+| 输出                                                                | 含义                                                                     | 解决办法                                                                           |
+|---------------------------------------------------------------------|--------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| INSTALL\_FAILED\_ALREADY\_EXISTS                                    | 应用已经存在，或卸载了但没卸载干净                                       | `adb install` 时使用 `-r` 参数，或者先 `adb uninstall <packagename>` 再安装        |
+| INSTALL\_FAILED\_INVALID\_APK                                       | 无效的 APK 文件                                                          |                                                                                    |
+| INSTALL\_FAILED\_INVALID\_URI                                       | 无效的 APK 文件名                                                        | 确保 APK 文件名里无中文                                                            |
+| INSTALL\_FAILED\_INSUFFICIENT\_STORAGE                              | 空间不足                                                                 | 清理空间                                                                           |
+| INSTALL\_FAILED\_DUPLICATE\_PACKAGE                                 | 已经存在同名程序                                                         |                                                                                    |
+| INSTALL\_FAILED\_NO\_SHARED\_USER                                   | 请求的共享用户不存在                                                     |                                                                                    |
+| INSTALL\_FAILED\_UPDATE\_INCOMPATIBLE                               | 以前安装过同名应用，但卸载时数据没有移除；或者已安装该应用，但签名不一致 | 先 `adb uninstall <packagename>` 再安装                                            |
+| INSTALL\_FAILED\_SHARED\_USER\_INCOMPATIBLE                         | 请求的共享用户存在但签名不一致                                           |                                                                                    |
+| INSTALL\_FAILED\_MISSING\_SHARED\_LIBRARY                           | 安装包使用了设备上不可用的共享库                                         |                                                                                    |
+| INSTALL\_FAILED\_REPLACE\_COULDNT\_DELETE                           | 替换时无法删除                                                           |                                                                                    |
+| INSTALL\_FAILED\_DEXOPT                                             | dex 优化验证失败或空间不足                                               |                                                                                    |
+| INSTALL\_FAILED\_OLDER\_SDK                                         | 设备系统版本低于应用要求                                                 |                                                                                    |
+| INSTALL\_FAILED\_CONFLICTING\_PROVIDER                              | 设备里已经存在与应用里同名的 content provider                            |                                                                                    |
+| INSTALL\_FAILED\_NEWER\_SDK                                         | 设备系统版本高于应用要求                                                 |                                                                                    |
+| INSTALL\_FAILED\_TEST\_ONLY                                         | 应用是 test-only 的，但安装时没有指定 `-t` 参数                          |                                                                                    |
+| INSTALL\_FAILED\_CPU\_ABI\_INCOMPATIBLE                             | 包含不兼容设备 CPU 应用程序二进制接口的 native code                      |                                                                                    |
+| INSTALL\_FAILED\_MISSING\_FEATURE                                   | 应用使用了设备不可用的功能                                               |                                                                                    |
+| INSTALL\_FAILED\_CONTAINER\_ERROR                                   | 1. sdcard 访问失败;<br />2. 应用签名与 ROM 签名一致，被当作内置应用。    | 1. 确认 sdcard 可用，或者安装到内置存储;<br />2. 打包时不与 ROM 使用相同签名。     |
+| INSTALL\_FAILED\_INVALID\_INSTALL\_LOCATION                         | 1. 不能安装到指定位置;<br />2. 应用签名与 ROM 签名一致，被当作内置应用。 | 1. 切换安装位置，添加或删除 `-s` 参数;<br />2. 打包时不与 ROM 使用相同签名。       |
+| INSTALL\_FAILED\_MEDIA\_UNAVAILABLE                                 | 安装位置不可用                                                           | 一般为 sdcard，确认 sdcard 可用或安装到内置存储                                    |
+| INSTALL\_FAILED\_VERIFICATION\_TIMEOUT                              | 验证安装包超时                                                           |                                                                                    |
+| INSTALL\_FAILED\_VERIFICATION\_FAILURE                              | 验证安装包失败                                                           |                                                                                    |
+| INSTALL\_FAILED\_PACKAGE\_CHANGED                                   | 应用与调用程序期望的不一致                                               |                                                                                    |
+| INSTALL\_FAILED\_UID\_CHANGED                                       | 以前安装过该应用，与本次分配的 UID 不一致                                | 清除以前安装过的残留文件                                                           |
+| INSTALL\_FAILED\_VERSION\_DOWNGRADE                                 | 已经安装了该应用更高版本                                                 | 使用 `-d` 参数                                                                     |
+| INSTALL\_FAILED\_PERMISSION\_MODEL\_DOWNGRADE                       | 已安装 target SDK 支持运行时权限的同名应用，要安装的版本不支持运行时权限 |                                                                                    |
+| INSTALL\_PARSE\_FAILED\_NOT\_APK                                    | 指定路径不是文件，或不是以 `.apk` 结尾                                   |                                                                                    |
+| INSTALL\_PARSE\_FAILED\_BAD\_MANIFEST                               | 无法解析的 AndroidManifest.xml 文件                                      |                                                                                    |
+| INSTALL\_PARSE\_FAILED\_UNEXPECTED\_EXCEPTION                       | 解析器遇到异常                                                           |                                                                                    |
+| INSTALL\_PARSE\_FAILED\_NO\_CERTIFICATES                            | 安装包没有签名                                                           |                                                                                    |
+| INSTALL\_PARSE\_FAILED\_INCONSISTENT\_CERTIFICATES                  | 已安装该应用，且签名与 APK 文件不一致                                    | 先卸载设备上的该应用，再安装                                                       |
+| INSTALL\_PARSE\_FAILED\_CERTIFICATE\_ENCODING                       | 解析 APK 文件时遇到 `CertificateEncodingException`                       |                                                                                    |
+| INSTALL\_PARSE\_FAILED\_BAD\_PACKAGE\_NAME                          | manifest 文件里没有或者使用了无效的包名                                  |                                                                                    |
+| INSTALL\_PARSE\_FAILED\_BAD\_SHARED\_USER\_ID                       | manifest 文件里指定了无效的共享用户 ID                                   |                                                                                    |
+| INSTALL\_PARSE\_FAILED\_MANIFEST\_MALFORMED                         | 解析 manifest 文件时遇到结构性错误                                       |                                                                                    |
+| INSTALL\_PARSE\_FAILED\_MANIFEST\_EMPTY                             | 在 manifest 文件里找不到找可操作标签（instrumentation 或 application）   |                                                                                    |
+| INSTALL\_FAILED\_INTERNAL\_ERROR                                    | 因系统问题安装失败                                                       |                                                                                    |
+| INSTALL\_FAILED\_USER\_RESTRICTED                                   | 用户被限制安装应用                                                       | 在开发者选项里将「USB安装」打开，如果已经打开了，那先关闭再打开。                                                                                   |
+| INSTALL\_FAILED\_DUPLICATE\_PERMISSION                              | 应用尝试定义一个已经存在的权限名称                                       |                                                                                    |
+| INSTALL\_FAILED\_NO\_MATCHING\_ABIS                                 | 应用包含设备的应用程序二进制接口不支持的 native code                     |                                                                                    |
+| INSTALL\_CANCELED\_BY\_USER                                         | 应用安装需要在设备上确认，但未操作设备或点了取消                         | 在设备上同意安装                                                                   |
+| INSTALL\_FAILED\_ACWF\_INCOMPATIBLE                                 | 应用程序与设备不兼容                                                     |                                                                                    |
+| INSTALL_FAILED_TEST_ONLY                                            | APK 文件是使用 Android Studio 直接 RUN 编译出来的文件                    | 通过 Gradle 的 assembleDebug 或 assembleRelease 重新编译，或者 Generate Signed APK |
+| does not contain AndroidManifest.xml                                | 无效的 APK 文件                                                          |                                                                                    |
+| is not a valid zip file                                             | 无效的 APK 文件                                                          |                                                                                    |
+| Offline                                                             | 设备未连接成功                                                           | 先将设备与 adb 连接成功                                                            |
+| unauthorized                                                        | 设备未授权允许调试                                                       |                                                                                    |
+| error: device not found                                             | 没有连接成功的设备                                                       | 先将设备与 adb 连接成功                                                            |
+| protocol failure                                                    | 设备已断开连接                                                           | 先将设备与 adb 连接成功                                                            |
+| Unknown option: -s                                                  | Android 2.2 以下不支持安装到 sdcard                                      | 不使用 `-s` 参数                                                                   |
+| No space left on device                                             | 空间不足                                                                 | 清理空间                                                                           |
+| Permission denied ... sdcard ...                                    | sdcard 不可用                                                            |                                                                                    |
+| signatures do not match the previously installed version; ignoring! | 已安装该应用且签名不一致                                                 | 先卸载设备上的该应用，再安装                                                       |
 
 参考：[PackageManager.java](https://github.com/android/platform_frameworks_base/blob/master/core%2Fjava%2Fandroid%2Fcontent%2Fpm%2FPackageManager.java)
 
@@ -643,16 +660,18 @@ adb shell pm clear com.qihoo360.mobilesafe
 命令：
 
 ```sh
-adb shell dumpsys activity activities | grep mFocusedActivity
+adb shell dumpsys activity activities | grep mResumedActivity
 ```
 
 输出示例：
 
 ```sh
-mFocusedActivity: ActivityRecord{8079d7e u0 com.cyanogenmod.trebuchet/com.android.launcher3.Launcher t42}
+mResumedActivity: ActivityRecord{8079d7e u0 com.cyanogenmod.trebuchet/com.android.launcher3.Launcher t42}
 ```
 
 其中的 `com.cyanogenmod.trebuchet/com.android.launcher3.Launcher` 就是当前处于前台的 Activity。
+
+*在 Windows 下以上命令可能不可用，可以尝试 `adb shell dumpsys activity activities | findstr mResumedActivity` 或 `adb shell "dumpsys activity activities | grep mResumedActivity"`。*
 
 ### 查看正在运行的 Services
 
@@ -665,6 +684,116 @@ adb shell dumpsys activity services [<packagename>]
 `<packagename>` 参数不是必须的，指定 `<packagename>` 表示查看与某个包名相关的 Services，不指定表示查看所有 Services。
 
 `<packagename>` 不一定要给出完整的包名，比如运行 `adb shell dumpsys activity services org.mazhuang`，那么包名 `org.mazhuang.demo1`、`org.mazhuang.demo2` 和 `org.mazhuang123` 等相关的 Services 都会列出来。
+
+### 查看应用详细信息
+
+命令：
+
+```sh
+adb shell dumpsys package <packagename>
+```
+
+输出中包含很多信息，包括 Activity Resolver Table、Registered ContentProviders、包名、userId、安装后的文件资源代码等路径、版本信息、权限信息和授予状态、签名版本信息等。
+
+`<packagename>` 表示应用包名。
+
+输出示例：
+
+```sh
+Activity Resolver Table:
+  Non-Data Actions:
+      android.intent.action.MAIN:
+        5b4cba8 org.mazhuang.guanggoo/.SplashActivity filter 5ec9dcc
+          Action: "android.intent.action.MAIN"
+          Category: "android.intent.category.LAUNCHER"
+          AutoVerify=false
+
+Registered ContentProviders:
+  org.mazhuang.guanggoo/com.tencent.bugly.beta.utils.BuglyFileProvider:
+    Provider{7a3c394 org.mazhuang.guanggoo/com.tencent.bugly.beta.utils.BuglyFileProvider}
+
+ContentProvider Authorities:
+  [org.mazhuang.guanggoo.fileProvider]:
+    Provider{7a3c394 org.mazhuang.guanggoo/com.tencent.bugly.beta.utils.BuglyFileProvider}
+      applicationInfo=ApplicationInfo{7754242 org.mazhuang.guanggoo}
+
+Key Set Manager:
+  [org.mazhuang.guanggoo]
+      Signing KeySets: 501
+
+Packages:
+  Package [org.mazhuang.guanggoo] (c1d7f):
+    userId=10394
+    pkg=Package{55f714c org.mazhuang.guanggoo}
+    codePath=/data/app/org.mazhuang.guanggoo-2
+    resourcePath=/data/app/org.mazhuang.guanggoo-2
+    legacyNativeLibraryDir=/data/app/org.mazhuang.guanggoo-2/lib
+    primaryCpuAbi=null
+    secondaryCpuAbi=null
+    versionCode=74 minSdk=15 targetSdk=25
+    versionName=1.1.74
+    splits=[base]
+    apkSigningVersion=2
+    applicationInfo=ApplicationInfo{7754242 org.mazhuang.guanggoo}
+    flags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP ]
+    privateFlags=[ RESIZEABLE_ACTIVITIES ]
+    dataDir=/data/user/0/org.mazhuang.guanggoo
+    supportsScreens=[small, medium, large, xlarge, resizeable, anyDensity]
+    timeStamp=2017-10-22 23:50:53
+    firstInstallTime=2017-10-22 23:50:25
+    lastUpdateTime=2017-10-22 23:50:55
+    installerPackageName=com.miui.packageinstaller
+    signatures=PackageSignatures{af09595 [53c7caa2]}
+    installPermissionsFixed=true installStatus=1
+    pkgFlags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP ]
+    requested permissions:
+      android.permission.READ_PHONE_STATE
+      android.permission.INTERNET
+      android.permission.ACCESS_NETWORK_STATE
+      android.permission.ACCESS_WIFI_STATE
+      android.permission.READ_LOGS
+      android.permission.WRITE_EXTERNAL_STORAGE
+      android.permission.READ_EXTERNAL_STORAGE
+    install permissions:
+      android.permission.INTERNET: granted=true
+      android.permission.ACCESS_NETWORK_STATE: granted=true
+      android.permission.ACCESS_WIFI_STATE: granted=true
+    User 0: ceDataInode=1155675 installed=true hidden=false suspended=false stopped=true notLaunched=false enabled=0
+      gids=[3003]
+      runtime permissions:
+        android.permission.READ_EXTERNAL_STORAGE: granted=true
+        android.permission.READ_PHONE_STATE: granted=true
+        android.permission.WRITE_EXTERNAL_STORAGE: granted=true
+    User 999: ceDataInode=0 installed=false hidden=false suspended=false stopped=true notLaunched=true enabled=0
+      gids=[3003]
+      runtime permissions:
+
+
+Dexopt state:
+  [org.mazhuang.guanggoo]
+    Instruction Set: arm64
+      path: /data/app/org.mazhuang.guanggoo-2/base.apk
+      status: /data/app/org.mazhuang.guanggoo-2/oat/arm64/base.odex [compilation_filter=speed-profile, status=kOatUpToDa
+      te]
+```
+
+### 查看应用安装路径
+
+命令:
+
+```
+adb shell pm path <PACKAGE>
+```
+
+输出应用安装路径
+
+输出示例:
+
+```
+adb shell pm path ecarx.weather
+
+package:/data/app/ecarx.weather-1.apk
+```
 
 ## 与应用交互
 
@@ -702,7 +831,8 @@ adb shell dumpsys activity services [<packagename>]
 | `--eia <EXTRA_KEY> <EXTRA_INT_VALUE>[,<EXTRA_INT_VALUE...]`   | integer 数组                           |
 | `--ela <EXTRA_KEY> <EXTRA_LONG_VALUE>[,<EXTRA_LONG_VALUE...]` | long 数组                              |
 
-### 调起 Activity
+### 启动应用/ 调起 Activity
+> 指定Activity名称启动
 
 命令格式：
 
@@ -724,6 +854,21 @@ adb shell am start -n org.mazhuang.boottimemeasure/.MainActivity --es "toast" "h
 
 表示调起 `org.mazhuang.boottimemeasure/.MainActivity` 并传给它 string 数据键值对 `toast - hello, world`。
 
+> 不指定Activity名称启动（启动主Activity）
+
+命令格式：
+
+```sh
+adb shell monkey -p <packagename> -c android.intent.category.LAUNCHER 1
+```
+例如：
+
+```sh
+adb shell monkey -p com.tencent.mm -c android.intent.category.LAUNCHER 1
+```
+
+表示调起微信主界面。
+
 ### 调起 Service
 
 命令格式：
@@ -739,6 +884,20 @@ adb shell am startservice -n com.tencent.mm/.plugin.accountsync.model.AccountAut
 ```
 
 表示调起微信的某 Service。
+
+另外一个典型的用例是如果设备上原本应该显示虚拟按键但是没有显示，可以试试这个：
+
+```sh
+adb shell am startservice -n com.android.systemui/.SystemUIService
+```
+
+### 停止 Service
+
+命令格式：
+
+```sh
+adb shell am stopservice [options] <INTENT>
+```
 
 ### 发送广播
 
@@ -808,6 +967,26 @@ adb shell am force-stop com.qihoo360.mobilesafe
 ```
 
 表示停止 360 安全卫士的一切进程与服务。
+
+### 收紧内存
+
+命令：
+```sh
+adb shell am send-trim-memory  <pid> <level>
+```
+
+pid: 进程 ID
+level:
+	HIDDEN、RUNNING_MODERATE、BACKGROUND、
+	RUNNING_LOW、MODERATE、RUNNING_CRITICAL、COMPLETE
+
+命令示例：
+
+```sh
+adb shell am send-trim-memory 12345 RUNNING_LOW
+```
+
+表示向 pid=12345 的进程，发出 level=RUNNING_LOW 的收紧内存命令。
 
 ## 文件管理
 
@@ -1710,6 +1889,33 @@ adb shell settings put global adb_enabled 0
 
 去设备上手动恢复吧：「设置」-「开发者选项」-「Android 调试」。
 
+### 允许/禁止访问非 SDK API
+
+允许访问非 SDK API：
+
+```sh
+adb shell settings put global hidden_api_policy_pre_p_apps 1
+adb shell settings put global hidden_api_policy_p_apps 1
+```
+
+禁止访问非 SDK API：
+
+```sh
+adb shell settings delete global hidden_api_policy_pre_p_apps
+adb shell settings delete global hidden_api_policy_p_apps
+```
+
+不需要设备获得 Root 权限。
+
+命令最后的数字的含义：
+
+| 值 | 含义                                                                                                                      |
+|----|---------------------------------------------------------------------------------------------------------------------------|
+| 0  | 禁止检测非 SDK 接口的调用。该情况下，日志记录功能被禁用，并且令 strict mode API，即 detectNonSdkApiUsage() 无效。不推荐。 |
+| 1  | 仅警告——允许访问所有非 SDK 接口，但保留日志中的警告信息，可继续使用 strick mode API。                                     |
+| 2  | 禁止调用深灰名单和黑名单中的接口。                                                                                        |
+| 3  | 禁止调用黑名单中的接口，但允许调用深灰名单中的接口。                                                                      |
+
 ### 状态栏和导航栏的显示隐藏
 
 本节所说的相关设置对应 Cyanogenmod 里的「扩展桌面」。
@@ -1948,6 +2154,23 @@ network={
 
 `ssid` 即为我们在 WLAN 设置里看到的名称，`psk` 为密码，`key_mgmt` 为安全加密方式。
 
+如果 Android O 或以后，WiFi 密码保存的地址有变化，是在 `WifiConfigStore.xml` 里面
+
+```sh
+adb shell
+su
+cat /data/misc/wifi/WifiConfigStore.xml
+```
+
+输出格式：
+
+数据项较多，只需关注 `ConfigKey`（WiFi 名字）和 `PreSharedKey`（WiFi 密码）即可
+
+```xml
+<string name="ConfigKey">&quot;Wi-Fi&quot;WPA_PSK</string>
+<string name="PreSharedKey">&quot;931907334&quot;</string>
+```
+
 ### 设置系统日期和时间
 
 **注：需要 root 权限。**
@@ -2069,6 +2292,40 @@ adb reboot bootloader
    adb sideload <path-to-update.zip>
    ```
 
+## 安全相关命令
+
+### 启用/禁用 SELinux
+
+启用 SELinux
+
+```sh
+adb root
+adb shell setenforce 1
+```
+
+禁用 SELinux
+
+```sh
+adb root
+adb shell setenforce 0
+```
+
+### 启用/禁用 dm_verity
+
+启用 dm_verity
+
+```sh
+adb root
+adb enable-verity
+```
+
+禁用 dm_verity
+
+```sh
+adb root
+adb disable-verity
+```
+
 ## 更多 adb shell 命令
 
 Android 系统是基于 Linux 内核的，所以 Linux 里的很多命令在 Android 里也有相同或类似的实现，在 `adb shell` 里可以调用。本文档前面的部分内容已经用到了 `adb shell` 命令。
@@ -2157,6 +2414,32 @@ Usage: top [ -m max_procs ] [ -n iterations ] [ -d delay ] [ -s sort_column ] [ 
     -h      显示帮助文档
 ```
 
+### 查看进程 UID
+
+有两种方案：
+
+1. `adb shell dumpsys package <packagename> | grep userId=`
+
+   如：
+
+   ```sh
+   $ adb shell dumpsys package org.mazhuang.guanggoo | grep userId=
+      userId=10394
+   ```
+
+2. 通过 ps 命令找到对应进程的 pid 之后 `adb shell cat /proc/<pid>/status | grep Uid`
+
+   如：
+
+   ```sh
+   $ adb shell
+   gemini:/ $ ps | grep org.mazhuang.guanggoo
+   u0_a394   28635 770   1795812 78736 SyS_epoll_ 0000000000 S org.mazhuang.guanggoo
+   gemini:/ $ cat /proc/28635/status | grep Uid
+   Uid:    10394   10394   10394   10394
+   gemini:/ $
+   ```
+
 ### 其它
 
 如下是其它常用命令的简单描述，前文已经专门讲过的命令不再额外说明：
@@ -2210,15 +2493,39 @@ taskkill /PID 1548
 
 然后再启动 adb 就没问题了。
 
+### com.android.ddmlib.AdbCommandRejectedException
+
+在 Android Studio 里新建一个模拟器，但是用 adb 一直连接不上，提示：
+
+```
+com.android.ddmlib.AdbCommandRejectedException: device unauthorized.
+This adb server's $ADB_VENDOR_KEYS is not set
+Try 'adb kill-server' if that seems wrong.
+Otherwise check for a confirmation dialog on your device.
+```
+
+在手机上安装一个终端然后执行 su 提示没有该命令，这不正常。
+
+于是删除该模拟器后重新下载安装一次，这次就正常了。
+
 ## adb 的非官方实现
 
 * [fb-adb](https://github.com/facebook/fb-adb) - A better shell for Android devices (for Mac).
+
+## 相关命令
+
+* [aapt](./related/aapt.md)
+* [am](./related/am.md)
+* [dumsys](./related/dumpsys.md)
+* [pm](./related/pm.md)
+* [uiautomator](./related/uiautomator.md)
 
 ## 致谢
 
 感谢朋友们无私的分享与补充（排名不分先后）。
 
-[zxning](https://github.com/zxning)，[linhua55](https://github.com/linhua55)，[codeskyblue](https://github.com/codeskyblue)，[seasonyuu](https://github.com/seasonyuu)，[fan123199](https://github.com/fan123199)，[zhEdward](https://github.com/zhEdward)，[0x8BADFOOD](https://github.com/0x8BADFOOD)，[keith666666](https://github.com/keith666666)。
+[zxning](https://github.com/zxning)，[linhua55](https://github.com/linhua55)，[codeskyblue](https://github.com/codeskyblue)，[seasonyuu](https://github.com/seasonyuu)，[fan123199](https://github.com/fan123199)，[zhEdward](https://github.com/zhEdward)，[0x8BADFOOD](https://github.com/0x8BADFOOD)，[keith666666](https://github.com/keith666666)，[shawnlinboy](https://github.com/shawnlinboy)，[s-xq](https://github.com/s-xq)，
+[lucky9322](https://github.com/lucky9322)。
 
 ## 参考链接
 
